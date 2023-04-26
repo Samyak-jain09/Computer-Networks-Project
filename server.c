@@ -8,11 +8,12 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/select.h>
-#define pid 0.1
+
 #define TIMEOUT 2
 #define BUFFSIZE 100
 #define MAXPENDING 10
-#define port 12392
+#define port 12430
+float pid =0.2;
 void die(char *s){
     perror(s);
     exit(1);
@@ -27,7 +28,9 @@ typedef struct packet{
 bool discard=false;
 void discardPacket(){
     srand(time(NULL)); // initialize random number generator
-    if ((double) rand() / RAND_MAX <= pid) {
+    double r = (double) rand() / (RAND_MAX);
+    if (r < pid) {
+        //printf("Discarded packet with probability %f\n", r);
         discard = true;
     } else {
         discard = false;
@@ -50,7 +53,7 @@ int main(){
     sizeof(serverAddress));
     if (temp < 0)
     { 
-        printf ("Error while binding\n");
+        printf ("Error while binding, try to change the port number\n");
         exit (0);
     }
     printf ("Binding successful\n");
@@ -74,10 +77,10 @@ int main(){
     PACKET prev_ack1;
     PACKET prev_ack2;
     prev_ack1.type=0;
-    prev_ack1.seq=0;
+    prev_ack1.seq=-1;
     prev_ack1.client=1;
     prev_ack2.type=0;
-    prev_ack2.seq=0;
+    prev_ack2.seq=-1;
     prev_ack2.client=2;
     int clientLength1 = sizeof(clientAddress1);
     int clientLength2 = sizeof(clientAddress2);
@@ -100,30 +103,37 @@ int main(){
                     exit (0);
                 }
             
-                if(p.client==1 && p.seq==offset_1 && discard==false){
-                    printf("RCVD PKT: Seq. No. = %d, Size = %d Bytes\n",p.seq,p.size);
-                    fwrite(p.data,sizeof(char),p.size,file);
-                    fwrite(",",sizeof(char),1,file);
-                    offset_1+=p.size;
-                    ack_p.seq=p.seq;
-                    ack_p.type=0;
-                    ack_p.client=1;
-                    prev_ack1=ack_p;
-                    int byteSent=send(clientSocket1, &ack_p, sizeof(ack_p), 0);
-                    if (byteSent <0) {
-                        die("send() failed");
+                if(p.client==1 && p.seq==offset_1){
+                    if(discard==false){
+                        printf("RCVD PKT: Seq. No. = %d, Size = %d Bytes\n",p.seq,p.size);
+                        fwrite(p.data,sizeof(char),p.size,file);
+                        fwrite(",",sizeof(char),1,file);
+                        offset_1+=p.size;
+                        ack_p.seq=p.seq;
+                        ack_p.type=0;
+                        ack_p.client=1;
+                        prev_ack1=ack_p;
+                        int byteSent=send(clientSocket1, &ack_p, sizeof(ack_p), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
+                        printf("SENT ACK: Seq. No. = %d \n",ack_p.seq);
+                        state=1;
+                    
                     }
-                    printf("SENT ACK: Seq. No. = %d \n",ack_p.seq);
-                    state=1;
-                    
-                }
-                else{
-                    
-                    printf("DROP PKT: Seq. No. = %d\n",p.seq);
-                    
-                    int byteSent=send(clientSocket1, &prev_ack1, sizeof(prev_ack1), 0);
-                    if (byteSent <0) {
-                        die("send() failed");
+                    else if(discard==true){
+                        
+                        printf("DROP PKT: Seq. No. = %d\n",p.seq);
+                        int byteSent=send(clientSocket1, &prev_ack1, sizeof(prev_ack1), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
+                    }
+                    else{
+                        int byteSent=send(clientSocket1, &prev_ack1, sizeof(prev_ack1), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
                     }
                 }
                 
@@ -143,30 +153,38 @@ int main(){
                     printf ("All Packets transferred\n");
                     exit (0);
                 }
-                if(p.client==2 && p.seq==offset_2 && discard==false){
-                    printf("RCVD PKT: Seq. No. = %d, Size = %d Bytes\n",p.seq,p.size);
-                    fwrite(p.data,sizeof(char),p.size,file);
-                    fwrite(",",sizeof(char),1,file);
-                    offset_2+=p.size;
-                    ack_p.seq=p.seq;
-                    ack_p.type=0;
-                    ack_p.client=2;
-                    prev_ack2=ack_p;
-                    int byteSent=send(clientSocket2, &ack_p, sizeof(ack_p), 0);
-                    if (byteSent <0) {
-                        die("send() failed");
+                if(p.client==2 && p.seq==offset_2){
+                    if(discard==false){
+                        printf("RCVD PKT: Seq. No. = %d, Size = %d Bytes\n",p.seq,p.size);
+                        fwrite(p.data,sizeof(char),p.size,file);
+                        fwrite(",",sizeof(char),1,file);
+                        offset_2+=p.size;
+                        ack_p.seq=p.seq;
+                        ack_p.type=0;
+                        ack_p.client=2;
+                        prev_ack2=ack_p;
+                        int byteSent=send(clientSocket2, &ack_p, sizeof(ack_p), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
+                        printf("SENT ACK: Seq. No. = %d \n",ack_p.seq);
+                        state=2;
+                    
                     }
-                    printf("SENT ACK: Seq. No. = %d \n",ack_p.seq);
-                    state=2;
-                    
-                }
-                else{
-                   
-                    printf("DROP PKT: Seq. No. = %d\n",p.seq);
-                    
-                    int byteSent=send(clientSocket2, &prev_ack2, sizeof(prev_ack2), 0);
-                    if (byteSent <0) {
-                        die("send() failed");
+                    else if (discard==true){
+                        
+                        printf("DROP PKT: Seq. No. = %d\n",p.seq);
+                        
+                        int byteSent=send(clientSocket2, &prev_ack2, sizeof(prev_ack2), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
+                    }
+                    else{
+                        int byteSent=send(clientSocket2, &prev_ack2, sizeof(prev_ack2), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
                     }
                 }
                 break;
@@ -184,31 +202,40 @@ int main(){
                     exit (0);
                 }
                 //printf("offset = %d sequence = %d\n",offset_1,p.seq);
-                if(p.client==1 && p.seq==offset_1 && discard==false){
+                if(p.client==1 && p.seq==offset_1) {
+                    if(discard==false){
                     
-                    printf("RCVD PKT: Seq. No. = %d, Size = %d Bytes\n",p.seq,p.size);
-                    fwrite(p.data,sizeof(char),p.size,file);
-                    fwrite(",",sizeof(char),1,file);
-                    offset_1+=p.size;
-                    ack_p.seq=p.seq;
-                    ack_p.type=0;
-                    ack_p.client=1;
-                    prev_ack1=ack_p;
-                    int byteSent=send(clientSocket1, &ack_p, sizeof(ack_p), 0);
-                    if (byteSent <0) {
-                        die("send() failed");
+                        printf("RCVD PKT: Seq. No. = %d, Size = %d Bytes\n",p.seq,p.size);
+                        fwrite(p.data,sizeof(char),p.size,file);
+                        fwrite(",",sizeof(char),1,file);
+                        offset_1+=p.size;
+                        ack_p.seq=p.seq;
+                        ack_p.type=0;
+                        ack_p.client=1;
+                        prev_ack1=ack_p;
+                        int byteSent=send(clientSocket1, &ack_p, sizeof(ack_p), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
+                        printf("SENT ACK: Seq. No. = %d \n",ack_p.seq);
+                        state=3;
+                    
                     }
-                    printf("SENT ACK: Seq. No. = %d \n",ack_p.seq);
-                    state=3;
                     
-                }
-                else{
-                    
-                    printf("DROP PKT: Seq. No. = %d\n",p.seq);
-                    
-                    int byteSent=send(clientSocket1, &prev_ack1, sizeof(prev_ack1), 0);
-                    if (byteSent <0) {
-                        die("send() failed");
+                    else if(discard==true){
+                        
+                        printf("DROP PKT: Seq. No. = %d\n",p.seq);
+                        
+                        int byteSent=send(clientSocket1, &prev_ack1, sizeof(prev_ack1), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
+                    }
+                    else{
+                        int byteSent=send(clientSocket1, &prev_ack1, sizeof(prev_ack1), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
                     }
                 }
                 break;
@@ -225,30 +252,38 @@ int main(){
                     printf ("All Packets transferred\n");
                     exit (0);
                 }
-                if(p.client==2 && p.seq==offset_2 && discard==false){
-                    printf("RCVD PKT: Seq. No. = %d, Size = %d Bytes\n",p.seq,p.size);
-                   fwrite(p.data,sizeof(char),p.size,file);
-                    fwrite(",",sizeof(char),1,file);
-                    offset_2+=p.size;
-                    ack_p.seq=p.seq;
-                    ack_p.type=0;
-                    ack_p.client=2;
-                    prev_ack2=ack_p;
-                    int byteSent=send(clientSocket2, &ack_p, sizeof(ack_p), 0);
-                    if (byteSent <0) {
-                        die("send() failed");
+                if(p.client==2 && p.seq==offset_2){
+                    if(discard==false){
+                        printf("RCVD PKT: Seq. No. = %d, Size = %d Bytes\n",p.seq,p.size);
+                        fwrite(p.data,sizeof(char),p.size,file);
+                        fwrite(",",sizeof(char),1,file);
+                        offset_2+=p.size;
+                        ack_p.seq=p.seq;
+                        ack_p.type=0;
+                        ack_p.client=2;
+                        prev_ack2=ack_p;
+                        int byteSent=send(clientSocket2, &ack_p, sizeof(ack_p), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
+                        printf("SENT ACK: Seq. No. = %d \n",ack_p.seq);
+                        state=0;
+                    
                     }
-                    printf("SENT ACK: Seq. No. = %d \n",ack_p.seq);
-                    state=0;
-                    
-                }
-                else{
-                    
-                    printf("DROP PKT: Seq. No. = %d\n",p.seq);
-                    
-                    int byteSent=send(clientSocket2, &prev_ack2, sizeof(prev_ack2), 0);
-                    if (byteSent <0) {
-                        die("send() failed");
+                    else if(discard==true){
+                        
+                        printf("DROP PKT: Seq. No. = %d\n",p.seq);
+                        
+                        int byteSent=send(clientSocket2, &prev_ack2, sizeof(prev_ack2), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
+                    }
+                    else{
+                        int byteSent=send(clientSocket2, &prev_ack2, sizeof(prev_ack2), 0);
+                        if (byteSent <0) {
+                            die("send() failed");
+                        }
                     }
                 }
                 break;

@@ -8,11 +8,11 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/select.h>
-#define pid 0.1
+
 #define TIMEOUT 2
 #define BUFFSIZE 100
-#define port 12392
-
+#define port 12430
+float pid= 0.2;
 void die(char *s){
     perror(s);
     exit(1);
@@ -27,7 +27,7 @@ typedef struct packet{
 bool discard=false;
 void discardPacket(){
     srand(time(NULL)); // initialize random number generator
-    if ((double) rand() / RAND_MAX <= pid) {
+    if ((double) rand() / RAND_MAX < pid) {
         discard = true;
     } else {
         discard = false;
@@ -259,13 +259,7 @@ int main(){
         }
 
     }
-    int bytesRecieved=recv(sock,&p,sizeof(p),0);
-    if(bytesRecieved<0)
-        die("recv() failed");
-    if(p.type==0 && p.seq==prev.seq && discard==false && p.client==2){
-        printf("RCVD ACK: Seq. No. = %d\n",p.seq);
-        state=0;
-    }
+ 
     fclose(fp);
 
 }
