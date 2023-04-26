@@ -12,8 +12,8 @@
 #define TIMEOUT 2
 #define BUFFSIZE 100
 #define MAXPENDING 10
-#define port 12430
-float pid =0.2;
+#define port 12435
+float pdr =0.1;
 void die(char *s){
     perror(s);
     exit(1);
@@ -29,7 +29,7 @@ bool discard=false;
 void discardPacket(){
     srand(time(NULL)); // initialize random number generator
     double r = (double) rand() / (RAND_MAX);
-    if (r < pid) {
+    if (r < pdr) {
         //printf("Discarded packet with probability %f\n", r);
         discard = true;
     } else {
@@ -129,13 +129,14 @@ int main(){
                             die("send() failed");
                         }
                     }
-                    else{
+                    
+                }
+                else{
                         int byteSent=send(clientSocket1, &prev_ack1, sizeof(prev_ack1), 0);
                         if (byteSent <0) {
                             die("send() failed");
                         }
                     }
-                }
                 
 
                 break;
@@ -180,13 +181,14 @@ int main(){
                             die("send() failed");
                         }
                     }
-                    else{
+                    
+                }
+                else{
                         int byteSent=send(clientSocket2, &prev_ack2, sizeof(prev_ack2), 0);
                         if (byteSent <0) {
                             die("send() failed");
                         }
                     }
-                }
                 break;
             }
             case 2:{
@@ -231,13 +233,14 @@ int main(){
                             die("send() failed");
                         }
                     }
-                    else{
+                    
+                }
+                else{
                         int byteSent=send(clientSocket1, &prev_ack1, sizeof(prev_ack1), 0);
                         if (byteSent <0) {
                             die("send() failed");
                         }
                     }
-                }
                 break;
             }
             case 3:{
@@ -279,13 +282,14 @@ int main(){
                             die("send() failed");
                         }
                     }
-                    else{
+                    
+                }
+                else{
                         int byteSent=send(clientSocket2, &prev_ack2, sizeof(prev_ack2), 0);
                         if (byteSent <0) {
                             die("send() failed");
                         }
                     }
-                }
                 break;
             }
         }

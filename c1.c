@@ -11,8 +11,8 @@
 
 #define TIMEOUT 2
 #define BUFFSIZE 100
-#define port 12430
-float pid= 0.2;
+#define port 12435
+float pdr= 0.1;
 void die(char *s){
     perror(s);
     exit(1);
@@ -66,7 +66,7 @@ void calculate_last_offset(){
 }
 void discardPacket(){
     srand(time(NULL)); // initialize random number generator
-    if ((double) rand() / RAND_MAX < pid) {
+    if ((double) rand() / RAND_MAX < pdr) {
         discard = true;
     } else {
         discard = false;
