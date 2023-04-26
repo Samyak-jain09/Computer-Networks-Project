@@ -13,7 +13,7 @@ int main() {
         printf("Error opening file.\n");
         return 1;
     }
-    
+    int final_offset;
     while (fgets(line, sizeof(line), fp)) {
         // remove trailing newline character
         line[strcspn(line, "\n")] = 0;
@@ -29,7 +29,7 @@ int main() {
             int len = strlen(token);
             
             printf("Token: %s Offset: %d\n", token, offset);
-            
+            final_offset=offset;
             offset += len;
             
             // skip the comma, if present
@@ -41,6 +41,7 @@ int main() {
         }
     }
     
+    printf("Last offset = %d\n",final_offset );
     fclose(fp);
     return 0;
 }

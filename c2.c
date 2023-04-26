@@ -11,7 +11,7 @@
 #define pid 0.1
 #define TIMEOUT 2
 #define BUFFSIZE 100
-#define port 12375
+#define port 12392
 
 void die(char *s){
     perror(s);
@@ -33,6 +33,47 @@ void discardPacket(){
         discard = false;
     }   
 }
+
+int final_offset=0;
+void calculate_last_offset(){
+    FILE *fp1;
+    char *token;
+    fp1 = fopen("id.txt", "r");
+    if (fp1 == NULL) {
+        printf("Error opening file.\n");
+        return ;
+    }
+    char line[10000];
+    int offset = 0;
+    while (fgets(line, sizeof(line), fp1)) {
+        // remove trailing newline character
+        line[strcspn(line, "\n")] = 0;
+        
+        // check if line ends with full stop
+        if (line[strlen(line)-1] == '.') {
+            line[strlen(line)-1] = '\0';
+        }
+        
+        // tokenize the line based on comma delimiter
+        token = strtok(line, ",");
+        while (token != NULL) {
+            int len = strlen(token);
+            
+            
+            final_offset=offset;
+            offset += len;
+            
+            // skip the comma, if present
+            if (offset < strlen(line) && line[offset] == ',') {
+                offset++;
+            }
+            
+            token = strtok(NULL, ",");
+        }
+    }
+    fclose(fp1);
+}
+
 int main(){
     int sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sock < 0) { printf ("Error in opening a socket"); exit (0);}
@@ -52,7 +93,7 @@ int main(){
     printf ("Connection Established\n");
     FILE *fp;
     char filename[] = "id.txt";
-    char line[100];
+    char line[10000];
     char *token;
     PACKET p;
     fp = fopen(filename, "r");
@@ -63,6 +104,7 @@ int main(){
     int offset=0;
     int state=0;
     PACKET prev;
+    calculate_last_offset();
     while (fgets(line, sizeof(line), fp)){
         line[strcspn(line, "\n")] = 0;
         
@@ -74,8 +116,10 @@ int main(){
         // tokenize the line based on comma delimiter
         token = strtok(line, ",");
         
-        while (token != NULL) {
-            int len = strlen(token);
+        while (1) {
+            int len=0;
+            if(token!=NULL)
+                len = strlen(token);
             
            // printf("Token: %s Offset: %d\n", token, offset);
 
@@ -135,6 +179,10 @@ int main(){
                     die("recv() failed");
                 if(p.type==0 && p.seq==prev.seq && discard==false && p.client==2){
                     printf("RCVD ACK: Seq. No. = %d\n",p.seq);
+                    if(p.seq==final_offset){
+                        printf("All packets transferred\n");
+                        exit(0);
+                    }
                     state=2;
                 }
                 break;
@@ -194,6 +242,10 @@ int main(){
                     die("recv() failed");
                 if(p.type==0 && p.seq==prev.seq && discard==false && p.client==2){
                     printf("RCVD ACK: Seq. No. = %d\n",p.seq);
+                    if(p.seq==final_offset){
+                        printf("All packets transferred\n");
+                        exit(0);
+                    }
                     state=0;
                 }
                 break;
@@ -206,6 +258,13 @@ int main(){
             
         }
 
+    }
+    int bytesRecieved=recv(sock,&p,sizeof(p),0);
+    if(bytesRecieved<0)
+        die("recv() failed");
+    if(p.type==0 && p.seq==prev.seq && discard==false && p.client==2){
+        printf("RCVD ACK: Seq. No. = %d\n",p.seq);
+        state=0;
     }
     fclose(fp);
 

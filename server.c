@@ -12,7 +12,7 @@
 #define TIMEOUT 2
 #define BUFFSIZE 100
 #define MAXPENDING 10
-#define port 12375
+#define port 12392
 void die(char *s){
     perror(s);
     exit(1);
@@ -93,10 +93,10 @@ int main(){
                // printf ("Handling Client %s\n", inet_ntoa(clientAddress1.sin_addr));
                 PACKET p;
                 int temp2 = recv(clientSocket1, &p, sizeof(p), 0);
-                if (temp2 < 0)
+                if (temp2 <= 0)
                 { 
                     //sleep(5);
-                    printf ("All Packets transferred");
+                    printf ("All Packets transferred\n");
                     exit (0);
                 }
             
@@ -137,10 +137,10 @@ int main(){
                 //printf ("Handling Client %s\n", inet_ntoa(clientAddress2.sin_addr));
                 PACKET p;
                 int temp2 = recv(clientSocket2, &p, sizeof(p), 0);
-                if (temp2 < 0)
+                if (temp2 <= 0)
                 { 
                     //sleep(5);
-                    printf ("All Packets transferred");
+                    printf ("All Packets transferred\n");
                     exit (0);
                 }
                 if(p.client==2 && p.seq==offset_2 && discard==false){
@@ -177,10 +177,10 @@ int main(){
                 //printf ("Handling Client %s\n", inet_ntoa(clientAddress1.sin_addr));
                 PACKET p;
                 int temp2 = recv(clientSocket1, &p, sizeof(p), 0);
-                if (temp2 < 0)
+                if (temp2 <= 0)
                 { 
                     //sleep(5);
-                    printf ("All Packets transferred");
+                    printf ("All Packets transferred\n");
                     exit (0);
                 }
                 //printf("offset = %d sequence = %d\n",offset_1,p.seq);
@@ -219,10 +219,10 @@ int main(){
                 //printf ("Handling Client %s\n", inet_ntoa(clientAddress2.sin_addr));
                 PACKET p;
                 int temp2 = recv(clientSocket2, &p, sizeof(p), 0);
-                if (temp2 < 0)
+                if (temp2 <= 0)
                 { 
                     //sleep(5);
-                    printf ("All Packets transferred");
+                    printf ("All Packets transferred\n");
                     exit (0);
                 }
                 if(p.client==2 && p.seq==offset_2 && discard==false){
