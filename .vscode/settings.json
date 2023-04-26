@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "*.html": "html",
+        "socket.h": "c",
+        "select.h": "c",
+        "types.h": "c",
+        "stdbool.h": "c",
+        "unistd.h": "c",
+        "inet.h": "c",
+        "stdio.h": "c",
+        "time.h": "c",
+        "stdlib.h": "c"
+    }
+}
